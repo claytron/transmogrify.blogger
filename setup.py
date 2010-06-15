@@ -8,9 +8,9 @@ def read(*rnames):
 
 
 description_parts = (
-    read("transmogrify", "blogger", "README.txt"),
+    read("transmogrify", "blogger", "README.rst"),
     '',
-    read("docs", "HISTORY.txt"),
+    read("docs", "HISTORY.rst"),
     '',
     )
 long_description = "\n".join(description_parts)
@@ -18,7 +18,7 @@ long_description = "\n".join(description_parts)
 setup(
     name='transmogrify.blogger',
     version=version,
-    description="A transmogrifier source for blogger ATOM exports",
+    description="A transmogrifier source for Blogger Atom exports",
     long_description=long_description,
     classifiers=[
         "Programming Language :: Python",

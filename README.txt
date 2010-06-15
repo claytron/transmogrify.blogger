@@ -1,1 +1,1 @@
-see transmogrify/blogger/README.txt
+see transmogrify/blogger/README.rst
