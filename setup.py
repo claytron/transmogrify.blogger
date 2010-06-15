@@ -34,6 +34,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'setuptools',
+        'lxml',
         'collective.transmogrifier',
         ],
     zip_safe=False,
