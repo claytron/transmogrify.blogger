@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:transmogrifier="http://namespaces.plone.org/transmogrifier"
+    i18n_domain="collective.transmogrifier">
+
+  <include package="collective.transmogrifier" />
+
+  <utility
+      name="transmogrify.blogger"
+      component=".source.BloggerSource"
+      />
+
+</configure>
