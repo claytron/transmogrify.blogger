@@ -1,1 +1,1 @@
-see collective/blogger/README.txt
+see transmogrify/blogger/README.txt
