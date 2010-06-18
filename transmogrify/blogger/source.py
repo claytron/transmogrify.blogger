@@ -58,6 +58,34 @@ class BloggerSource(object):
         self.xml_root = self.xml_obj.getroot()
         xml_file.close()
 
+    def extract_comments(self, post_id):
+        parsed_comments = []
+        comments = self.xml_root.xpath(
+            "a:entry/thr:in-reply-to[@ref = '%s']/.." % post_id,
+            namespaces=BLOGGER_NAMESPACES)
+        for comment in comments:
+            item = {}
+            item['id'] = comment.id.text
+            item['title'] = comment.title.text
+            item['content'] = comment.content.text
+            item['author.name'] = comment.author.name.text
+            # the uri may not exist, use find to get it
+            item['author.uri'] = comment.author.find("%suri" % ATOM_NAMESPACE)
+            item['author.email'] = comment.author.email.text
+            published = parse(comment.published.text)
+            item['published'] = published
+            published_rfc822 = published.strftime(RFC822_FMT)
+            item['published.rfc822'] = published_rfc822
+            updated = parse(comment.updated.text)
+            item['updated'] = updated
+            updated_rfc822 = updated.strftime(RFC822_FMT)
+            item['updated.rfc822'] = updated_rfc822
+            alt_link = comment.xpath(
+                "a:link[@rel='alternate']/@href",
+                namespaces=BLOGGER_NAMESPACES)
+            item['link'] = alt_link and alt_link[0] or ""
+        return parsed_comments
+
     def __iter__(self):
         # add any other sources into the stream
         for item in self.previous:
@@ -94,11 +122,10 @@ class BloggerSource(object):
             if draft and draft[0] == "yes":
                 post_state = "draft"
             item['_transmogrify.blogger.state'] = post_state
+            comment_total = post.xpath(
+                "thr:total",
+                namespaces=BLOGGER_NAMESPACES)[0]
+            item['_transmogrify.blogger.comments.number'] = int(comment_total)
+            comments = self.extract_comments(post.id.text)
+            item['_transmogrify.blogger.comments'] = comments
             yield item
-        # process the post comments
-        comments = self.xml_root.xpath(
-            "f:entry/f:category[contains(@term, '%s')]/.." % COMMENT_SCHEMA,
-            namespaces=BLOGGER_NAMESPACES)
-        for comment in comments:
-            # XXX: decide what to do with comments
-            pass
