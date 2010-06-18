@@ -35,6 +35,7 @@ setup(
     install_requires=[
         'setuptools',
         'lxml',
+        'python-dateutil',
         'collective.transmogrifier',
         ],
     zip_safe=False,

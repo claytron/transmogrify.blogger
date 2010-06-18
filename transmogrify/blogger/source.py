@@ -1,4 +1,5 @@
 from lxml import objectify
+from dateutil.parser import parse
 from zope.annotation.interfaces import IAnnotations
 from zope.interface import implements
 from zope.interface import classProvides
@@ -10,10 +11,16 @@ SETTINGS_KEY = "transmogrify.blogger.settings"
 SETTINGS_SCHEMA = "http://schemas.google.com/blogger/2008/kind#settings"
 POST_SCHEMA = "http://schemas.google.com/blogger/2008/kind#post"
 COMMENT_SCHEMA = "http://schemas.google.com/blogger/2008/kind#comment"
+ATOM_URL = "http://www.w3.org/2005/Atom"
+ATOM_NAMESPACE = "{%s}" % ATOM_URL
 BLOGGER_NAMESPACES = {
-    'f': "http://www.w3.org/2005/Atom",
+    'a': ATOM_URL,
     'thr': 'http://purl.org/syndication/thread/1.0',
+    'app': 'http://purl.org/atom/app#',
     }
+# XXX: leaving off the "%z" for now as DateTime fields in
+#      Archetypes don't seem to accept it.
+RFC822_FMT = "%a, %d %h %Y %T"
 
 
 class BloggerSource(object):
@@ -39,7 +46,7 @@ class BloggerSource(object):
 
     def init_settings(self):
         settings = self.xml_root.xpath(
-            "f:entry/f:category[contains(@term, '%s')]/.." % SETTINGS_SCHEMA,
+            "a:entry/a:category[contains(@term, '%s')]/.." % SETTINGS_SCHEMA,
             namespaces=BLOGGER_NAMESPACES)
         for setting in settings:
             setting_key = setting.id.text.split(".")[-1]
@@ -57,18 +64,36 @@ class BloggerSource(object):
             yield item
         # process the blog posts
         posts = self.xml_root.xpath(
-            "f:entry/f:category[contains(@term, '%s')]/.." % POST_SCHEMA,
+            "a:entry/a:category[contains(@term, '%s')]/.." % POST_SCHEMA,
             namespaces=BLOGGER_NAMESPACES)
         for post in posts:
-            # XXX: dates aren't working
-            item = dict(
-                title=post.title.text,
-                text=post.content.text,
-                effectiveDate=post.published.text,
-                modification_date=post.updated.text,
-                )
-            # XXX: do I need this?
-            item['_transmogrify.blogger.post_id'] = post.id.text
+            item = {}
+            item['_transmogrify.blogger.id'] = post.id.text
+            item['_transmogrify.blogger.title'] = post.title.text
+            item['_transmogrify.blogger.content'] = post.content.text
+            item['_transmogrify.blogger.author.name'] = post.author.name.text
+            item['_transmogrify.blogger.author.uri'] = post.author.uri.text
+            item['_transmogrify.blogger.author.email'] = post.author.email.text
+            published = parse(post.published.text)
+            item['_transmogrify.blogger.published'] = published
+            published_rfc822 = published.strftime(RFC822_FMT)
+            item['_transmogrify.blogger.published.rfc822'] = published_rfc822
+            updated = parse(post.updated.text)
+            item['_transmogrify.blogger.updated'] = updated
+            updated_rfc822 = updated.strftime(RFC822_FMT)
+            item['_transmogrify.blogger.updated.rfc822'] = updated_rfc822
+            alt_link = post.xpath(
+                "a:link[@rel='alternate']/@href",
+                namespaces=BLOGGER_NAMESPACES)
+            alt_link = alt_link and alt_link[0] or ""
+            item['_transmogrify.blogger.link'] = alt_link
+            post_state = "published"
+            draft = post.xpath(
+                "app:control/app:draft",
+                namespaces=BLOGGER_NAMESPACES)
+            if draft and draft[0] == "yes":
+                post_state = "draft"
+            item['_transmogrify.blogger.state'] = post_state
             yield item
         # process the post comments
         comments = self.xml_root.xpath(
