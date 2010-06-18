@@ -29,9 +29,6 @@ class BloggerSource(object):
         self.previous = previous
         # custom options for this source
         self.filename = resolvePackageReferenceOrFile(options['filename'])
-        self.blog_item_type = options.get('blog-item-type', '')
-        self.blog_root_path = options.get('blog-root-path', '')
-
         self.init_xml_obj(self.filename)
         # get the blog settings and add them as an annotation for
         # use later in the pipeline
@@ -70,9 +67,6 @@ class BloggerSource(object):
                 effectiveDate=post.published.text,
                 modification_date=post.updated.text,
                 )
-            if self.blog_item_type:
-                item['_type'] = self.blog_item_type
-            item['_transmogrify.blogger.blog_root_path'] = self.blog_root_path
             # XXX: do I need this?
             item['_transmogrify.blogger.post_id'] = post.id.text
             yield item
