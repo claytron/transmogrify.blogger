@@ -8,6 +8,8 @@ def read(*rnames):
 
 
 description_parts = (
+    read("README.rst"),
+    '',
     read("transmogrify", "blogger", "README.rst"),
     '',
     read("docs", "HISTORY.rst"),
