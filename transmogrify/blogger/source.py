@@ -61,16 +61,16 @@ class BloggerSource(object):
     def extract_comments(self, post_id):
         parsed_comments = []
         comments = self.xml_root.xpath(
-            "a:entry/thr:in-reply-to[@ref = '%s']/.." % post_id,
+            "a:entry/thr:in-reply-to[@ref='%s']/.." % post_id,
             namespaces=BLOGGER_NAMESPACES)
         for comment in comments:
             item = {}
             item['id'] = comment.id.text
             item['title'] = comment.title.text
-            item['content'] = comment.content.text
+            item['text'] = comment.content.text
             item['author.name'] = comment.author.name.text
             # the uri may not exist, use find to get it
-            item['author.uri'] = comment.author.find("%suri" % ATOM_NAMESPACE)
+            item['author.url'] = comment.author.find("%suri" % ATOM_NAMESPACE)
             item['author.email'] = comment.author.email.text
             published = parse(comment.published.text)
             item['published'] = published
@@ -84,6 +84,7 @@ class BloggerSource(object):
                 "a:link[@rel='alternate']/@href",
                 namespaces=BLOGGER_NAMESPACES)
             item['link'] = alt_link and alt_link[0] or ""
+            parsed_comments.append(item)
         return parsed_comments
 
     def __iter__(self):
