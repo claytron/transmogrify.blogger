@@ -58,14 +58,19 @@ class BloggerSource(object):
         self.xml_root = self.xml_obj.getroot()
         xml_file.close()
 
-    def extract_comments(self, post_id):
+    def extract_comments(self, post_id, parent_path):
+        """TODO: Move this down into iter?"""
         parsed_comments = []
         comments = self.xml_root.xpath(
             "a:entry/thr:in-reply-to[@ref='%s']/.." % post_id,
             namespaces=BLOGGER_NAMESPACES)
         for comment in comments:
             item = {}
-            item['id'] = comment.id.text
+            # XXX: Is this really needed, some other way around this?
+            item['_transmogrify.blogger.comment'] = True
+            item['_transmogrify.blogger.comment.id'] = comment.id.text
+            if parent_path:
+                item['_parent_path'] = parent_path
             item['title'] = comment.title.text
             item['text'] = comment.content.text
             item['author.name'] = comment.author.name.text
@@ -99,6 +104,9 @@ class BloggerSource(object):
             item = {}
             item['_transmogrify.blogger.id'] = post.id.text
             item['_transmogrify.blogger.title'] = post.title.text
+            text_type = dict(post.content.items()).get('type', '')
+            mimetype = text_type and 'text/%s' % text_type or ''
+            item['_transmogrify.blogger.mimetype'] = mimetype
             item['_transmogrify.blogger.content'] = post.content.text
             item['_transmogrify.blogger.author.name'] = post.author.name.text
             item['_transmogrify.blogger.author.uri'] = post.author.uri.text
@@ -127,6 +135,9 @@ class BloggerSource(object):
                 "thr:total",
                 namespaces=BLOGGER_NAMESPACES)[0]
             item['_transmogrify.blogger.comments.number'] = int(comment_total)
-            comments = self.extract_comments(post.id.text)
-            item['_transmogrify.blogger.comments'] = comments
             yield item
+            # get the path for the blog post so we can pass it on to the
+            # comments
+            parent_path = item.get('_path', '')
+            for comment in self.extract_comments(post.id.text, parent_path):
+                yield comment
